@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface WatchProps {
-  apiKey: string;
-}
-
-const Watch = ({ apiKey }: WatchProps) => {
+const Watch = () => {
+  const { apiKey } = useAuth();
   const { videoId } = useParams();
   const [relatedVideos, setRelatedVideos] = useState<any[]>([]);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -53,7 +51,7 @@ const Watch = ({ apiKey }: WatchProps) => {
           {/* Back Navigation */}
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-zinc-500 hover:text-white mb-4 transition-colors text-sm font-medium group"
+            className="inline-flex items-center gap-2 text-zen-text hover:text-primary mb-4 transition-colors text-sm font-medium group"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
             Back to Home
@@ -72,7 +70,7 @@ const Watch = ({ apiKey }: WatchProps) => {
 
           {/* Video Metadata */}
           <div className="mt-6">
-            <h1 className="text-xl md:text-2xl font-bold text-white mb-4 leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-zen-text mb-4 leading-tight">
               YouTube Video {videoId}
             </h1>
 
@@ -82,8 +80,8 @@ const Watch = ({ apiKey }: WatchProps) => {
                   Y
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">YouTube Creator</h3>
-                  <span className="text-xs text-zinc-500">1.2M subscribers</span>
+                  <h3 className="font-bold text-zen-text">YouTube Creator</h3>
+                  <span className="text-xs text-zen-subtext">1.2M subscribers</span>
                 </div>
                 <Button
                   variant={isSubscribed ? "secondary" : "default"}
@@ -94,10 +92,10 @@ const Watch = ({ apiKey }: WatchProps) => {
                 </Button>
               </div>
 
-              <div className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                <p>This is a simulated description for the video with ID: <span className="text-white font-mono bg-zinc-800 px-1.5 py-0.5 rounded">{videoId}</span>.</p>
+              <div className="text-sm text-zen-text/90 leading-relaxed whitespace-pre-wrap">
+                <p>This is a simulated description for the video with ID: <span className="text-zen-text font-mono bg-zen-surface px-1.5 py-0.5 rounded">{videoId}</span>.</p>
                 <br />
-                <p className="text-zinc-500">On a real app, we would fetch snippet.description here. The current focus is on the Zen UI aesthetic—clean lines, high contrast, and minimal distractions.</p>
+                <p className="text-zen-subtext">On a real app, we would fetch snippet.description here. The current focus is on the Zen UI aesthetic—clean lines, high contrast, and minimal distractions.</p>
               </div>
             </div>
           </div>
@@ -120,10 +118,10 @@ const Watch = ({ apiKey }: WatchProps) => {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <h4 className="text-sm font-bold text-white line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">
+                      <h4 className="text-sm font-bold text-zen-text line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">
                         {video.snippet.title}
                       </h4>
-                      <span className="text-xs text-zinc-500">{video.snippet.channelTitle}</span>
+                      <span className="text-xs text-zen-subtext">{video.snippet.channelTitle}</span>
                     </div>
                   </Link>
                 );
@@ -144,7 +142,7 @@ const Watch = ({ apiKey }: WatchProps) => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

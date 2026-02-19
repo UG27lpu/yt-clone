@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -6,10 +5,14 @@ import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SidebarProvider, useSidebar } from "./contexts/SidebarContext";
 
-// Layout component needs to be inside BrowserRouter for useNavigate to work
-function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+// Layout component using Context hooks
+function AppLayout() {
+  const { isSidebarOpen } = useSidebar();
+  const { apiKey, setApiKey, isSetup, completeSetup } = useAuth();
 
   if (!isSetup) {
     return (
@@ -27,7 +30,7 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
           <Button
             className="mt-6 w-full py-6 font-semibold rounded-xl text-md shadow-lg shadow-white/5"
             variant="secondary"
-            onClick={handleSetup}
+            onClick={completeSetup}
           >
             Start Watching
           </Button>
@@ -38,18 +41,18 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
 
   return (
     <div className="min-h-screen bg-zen-bg text-zen-text font-sans selection:bg-white/20">
-      <Header onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Header />
 
       <div className="flex">
-        {isSidebarOpen && <Sidebar />}
+        <SidebarWrapper />
 
         <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'md:ml-60' : ''}`}>
           <Routes>
-            <Route path="/" element={<Home apiKey={apiKey} />} />
-            <Route path="/trending" element={<Home apiKey={apiKey} isTrending={true} />} />
-            <Route path="/explore/:categoryId" element={<Home apiKey={apiKey} />} />
-            <Route path="/feed/history" element={<Home apiKey={apiKey} isHistory={true} />} />
-            <Route path="/watch/:videoId" element={<Watch apiKey={apiKey} />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/trending" element={<Home isTrending={true} />} />
+            <Route path="/explore/:categoryId" element={<Home />} />
+            <Route path="/feed/history" element={<Home isHistory={true} />} />
+            <Route path="/watch/:videoId" element={<Watch />} />
           </Routes>
         </main>
       </div>
@@ -57,26 +60,24 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
   );
 }
 
+// Separate Sidebar wrapper to avoid conditional rendering issues if any
+const SidebarWrapper = () => {
+  const { isSidebarOpen } = useSidebar();
+  if (!isSidebarOpen) return null;
+  return <Sidebar />;
+}
+
 function App() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || import.meta.env.VITE_YOUTUBE_API_KEY || "");
-  const [isSetup, setIsSetup] = useState(() => !!(localStorage.getItem("yt_api_key") || import.meta.env.VITE_YOUTUBE_API_KEY));
-
-  const handleSetup = () => {
-    if (apiKey.trim()) {
-      setIsSetup(true);
-      localStorage.setItem("yt_api_key", apiKey);
-    }
-  };
-
   return (
-    <BrowserRouter>
-      <AppLayout
-        apiKey={apiKey}
-        setApiKey={setApiKey}
-        isSetup={isSetup}
-        handleSetup={handleSetup}
-      />
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <AuthProvider>
+        <SidebarProvider>
+          <BrowserRouter>
+            <AppLayout />
+          </BrowserRouter>
+        </SidebarProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

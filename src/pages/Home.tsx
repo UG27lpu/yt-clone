@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { History } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 interface Snippet {
   title: string;
@@ -23,7 +26,9 @@ interface VideoItem {
   };
 }
 
-const Home = ({ apiKey, isTrending = false, isHistory = false }: { apiKey: string, isTrending?: boolean, isHistory?: boolean }) => {
+const Home = ({ isTrending = false, isHistory = false }: { isTrending?: boolean, isHistory?: boolean }) => {
+  const { apiKey } = useAuth();
+  const { isSidebarOpen } = useSidebar();
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +157,10 @@ const Home = ({ apiKey, isTrending = false, isHistory = false }: { apiKey: strin
     return "Today";
   };
 
+  const gridClasses = isSidebarOpen
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
+    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4";
+
   return (
     <div className="p-6 md:p-8 pt-24 min-h-screen">
       {error && (
@@ -159,15 +168,28 @@ const Home = ({ apiKey, isTrending = false, isHistory = false }: { apiKey: strin
           <p className="mb-2">Error: {error}</p>
           <button
             onClick={() => fetchVideos()}
-            className="mt-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="mt-2 text-sm bg-zen-surface hover:bg-zen-hover text-zen-text px-4 py-2 rounded-lg transition-colors"
           >
             Retry
           </button>
         </div>
       )}
 
+      {/* Empty History State */}
+      {!loading && !error && isHistory && videos.length === 0 && (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in duration-700">
+          <div className="bg-zinc-800/50 p-6 rounded-full mb-6 border-2 border-dashed border-zinc-700">
+            <History className="h-16 w-16 text-zen-subtext" strokeWidth={1.5} />
+          </div>
+          <h2 className="text-2xl font-bold text-zen-text mb-2">Watch history is empty</h2>
+          <p className="text-zen-subtext max-w-sm mx-auto">
+            Your watch history will appear here once you start watching videos.
+          </p>
+        </div>
+      )}
+
       {/* Video Grid - Bigger Thumbnails */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-y-10 gap-x-6">
+      <div className={`grid ${gridClasses} gap-y-10 gap-x-6`}>
         {videos.map((video) => {
           const videoId = typeof video.id === 'string' ? video.id : video.id.videoId;
           return (
@@ -190,17 +212,17 @@ const Home = ({ apiKey, isTrending = false, isHistory = false }: { apiKey: strin
               <div className="flex gap-3 items-start px-1">
                 {/* Channel Avatar Placeholder */}
                 <div className="flex-shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 group-hover:text-white transition-colors border border-white/5">
+                  <div className="w-9 h-9 rounded-full bg-zen-surface flex items-center justify-center text-[10px] font-bold text-zen-subtext group-hover:text-zen-text transition-colors border border-border">
                     {video.snippet.channelTitle ? video.snippet.channelTitle.charAt(0).toUpperCase() : '?'}
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <h3 className="text-white font-bold text-[15px] leading-snug line-clamp-2 group-hover:text-white/90">
+                  <h3 className="text-zen-text font-bold text-[15px] leading-snug line-clamp-2 group-hover:text-primary">
                     {video.snippet.title}
                   </h3>
-                  <div className="text-zinc-500 text-xs flex flex-col">
-                    <span className="hover:text-zinc-300 transition-colors">{video.snippet.channelTitle}</span>
+                  <div className="text-zen-subtext text-xs flex flex-col">
+                    <span className="hover:text-zen-text transition-colors">{video.snippet.channelTitle}</span>
                     <span className="mt-0.5">{video.statistics ? formatViews(video.statistics.viewCount) : 'Views unavailable'} • {formatTime(video.snippet.publishedAt)}</span>
                   </div>
                 </div>

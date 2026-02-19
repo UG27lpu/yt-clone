@@ -20,7 +20,7 @@ const Sidebar = () => {
       <ScrollArea className="h-full py-2">
         <div className="space-y-4 py-2">
           <div className="px-3 py-2">
-            <h2 className="mb-2 px-4 text-xs font-semibold tracking-tight text-zinc-500 uppercase">
+            <h2 className="mb-2 px-4 text-xs font-semibold tracking-tight text-zen-subtext uppercase">
               Discover
             </h2>
             <div className="space-y-1">
@@ -52,7 +52,7 @@ const Sidebar = () => {
           </div>
 
           <div className="px-3 py-2">
-            <h2 className="mb-2 px-4 text-xs font-semibold tracking-tight text-zinc-500 uppercase">
+            <h2 className="mb-2 px-4 text-xs font-semibold tracking-tight text-zen-subtext uppercase">
               Library
             </h2>
             <div className="space-y-1">
@@ -62,7 +62,7 @@ const Sidebar = () => {
                 label="History"
                 active={isActive("/feed/history")}
               />
-              <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-800">
+              <Button variant="ghost" className="w-full justify-start text-zen-text/70 hover:text-zen-text hover:bg-zen-hover">
                 <PlaySquare className="mr-2 h-4 w-4" />
                 Library
               </Button>
@@ -70,7 +70,7 @@ const Sidebar = () => {
           </div>
 
           <div className="px-3 py-2">
-            <h2 className="mb-2 px-4 text-xs font-semibold tracking-tight text-zinc-500 uppercase">
+            <h2 className="mb-2 px-4 text-xs font-semibold tracking-tight text-zen-subtext uppercase">
               Explore
             </h2>
             <div className="space-y-1">
@@ -120,7 +120,7 @@ const SidebarItem = ({ to, icon, label, active }: SidebarItemProps) => {
       variant={active ? "secondary" : "ghost"}
       className={cn(
         "w-full justify-start",
-        active ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+        active ? "bg-zen-hover text-zen-text" : "text-zen-text/70 hover:text-zen-text hover:bg-zen-hover"
       )}
     >
       <Link to={to}>
