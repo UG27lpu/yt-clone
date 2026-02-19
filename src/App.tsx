@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import "./App.css";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
+import Watch from "./pages/Watch";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Layout component needs to be inside BrowserRouter for useNavigate to work
 function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
@@ -28,45 +30,55 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
 
   if (!isSetup) {
     return (
-      <div className="setup-overlay">
-        <div className="setup-box">
-          <h2 style={{color: 'white', marginBottom: '10px'}}>Welcome</h2>
-          <p style={{color: '#aaa', fontSize: '14px'}}>Enter your YouTube Data API Key to continue</p>
-          <input
-            className="setup-input"
+      <div className="fixed inset-0 bg-zen-bg z-[60] flex flex-col items-center justify-center p-4">
+        <div className="bg-zen-surface p-8 rounded-2xl w-full max-w-md text-center shadow-2xl border border-zinc-900 ring-1 ring-white/5">
+          <h2 className="text-2xl font-bold text-white mb-2">Welcome</h2>
+          <p className="text-zinc-500 text-sm mb-6">Enter your YouTube Data API Key to continue</p>
+          <Input
+            className="w-full bg-black/30 border-zinc-800 text-white placeholder-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20"
             type="text"
             placeholder="Paste API Key here"
             value={apiKey}
             onChange={(e: any) => setApiKey(e.target.value)}
           />
-          <button className="setup-btn" onClick={handleSetup}>
+          <Button
+            className="mt-6 w-full py-6 font-semibold rounded-xl text-md shadow-lg shadow-white/5"
+            variant="secondary"
+            onClick={handleSetup}
+          >
             Start Watching
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-container with-sidebar">
+    <div className="min-h-screen bg-zen-bg text-zen-text flex selection:bg-white/20">
       <Sidebar />
-      
-      <main className="main-content">
+
+      <main className="flex-1 ml-16 w-[calc(100%-4rem)] transition-all duration-300">
         {/* Search Trigger */}
-        <div className="search-trigger" onClick={() => setIsSearchOpen(true)}>
-          <svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" focusable="false" style={{ pointerEvents: 'none', display: 'block', width: '24px', height: '24px', fill: 'white' }}><g><path d="M20.87,20.17l-5.59-5.59C16.35,13.35,17,11.75,17,10c0-3.87-3.13-7-7-7s-7,3.13-7,7s3.13,7,7,7c1.75,0,3.35-0.65,4.58-1.71 l5.59,5.59L20.87,20.17z M10,16c-3.31,0-6-2.69-6-6s2.69-6,6-6s6,2.69,6,6S13.31,16,10,16z"></path></g></svg>
+        <div
+          className="fixed top-6 right-6 w-12 h-12 bg-zen-surface hover:bg-zinc-800 hover:scale-105 rounded-full flex items-center justify-center cursor-pointer transition-all z-40 shadow-xl border border-white/5 group"
+          onClick={() => setIsSearchOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" className="w-6 h-6 text-zinc-400 group-hover:text-white transition-colors" fill="currentColor"><path d="M20.87,20.17l-5.59-5.59C16.35,13.35,17,11.75,17,10c0-3.87-3.13-7-7-7s-7,3.13-7,7s3.13,7,7,7c1.75,0,3.35-0.65,4.58-1.71 l5.59,5.59L20.87,20.17z M10,16c-3.31,0-6-2.69-6-6s2.69-6,6-6s6,2.69,6,6S13.31,16,10,16z"></path></svg>
         </div>
 
-        {/* Search Popup */}
+        {/* Search Popup - Zen Mode */}
         {isSearchOpen && (
-          <div className="search-overlay" onClick={() => setIsSearchOpen(false)}>
-            <div className="search-box" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 bg-zen-bg/95 backdrop-blur-xl z-[100] flex items-center justify-center animate-in fade-in duration-200"
+            onClick={() => setIsSearchOpen(false)}
+          >
+            <div className="w-full max-w-3xl px-6" onClick={(e) => e.stopPropagation()}>
               <form onSubmit={handleSearchSubmit}>
-                <input
+                <Input
                   ref={searchInputRef}
                   type="text"
-                  className="search-input"
-                  placeholder="Search"
+                  className="w-full bg-transparent border-0 border-b-2 border-zinc-800 rounded-none px-0 text-4xl md:text-5xl lg:text-6xl text-center text-white font-bold placeholder-zinc-800 focus-visible:ring-0 focus-visible:border-white transition-all pb-4 h-auto"
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -74,10 +86,11 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
             </div>
           </div>
         )}
-        
+
         <Routes>
           <Route path="/" element={<Home apiKey={apiKey} />} />
           <Route path="/trending" element={<Home apiKey={apiKey} isTrending={true} />} />
+          <Route path="/watch/:videoId" element={<Watch apiKey={apiKey} />} />
         </Routes>
       </main>
     </div>
@@ -86,13 +99,7 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
 
 function App() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("yt_api_key") || import.meta.env.VITE_YOUTUBE_API_KEY || "");
-  const [isSetup, setIsSetup] = useState(false);
-
-  useEffect(() => {
-    if (apiKey) {
-      setIsSetup(true);
-    }
-  }, []);
+  const [isSetup, setIsSetup] = useState(() => !!(localStorage.getItem("yt_api_key") || import.meta.env.VITE_YOUTUBE_API_KEY));
 
   const handleSetup = () => {
     if (apiKey.trim()) {
@@ -103,11 +110,11 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AppLayout 
-        apiKey={apiKey} 
-        setApiKey={setApiKey} 
-        isSetup={isSetup} 
-        handleSetup={handleSetup} 
+      <AppLayout
+        apiKey={apiKey}
+        setApiKey={setApiKey}
+        isSetup={isSetup}
+        handleSetup={handleSetup}
       />
     </BrowserRouter>
   );
