@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Snippet {
@@ -23,35 +23,46 @@ interface VideoItem {
   };
 }
 
-const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boolean }) => {
+const Home = ({ apiKey, isTrending = false, isHistory = false }: { apiKey: string, isTrending?: boolean, isHistory?: boolean }) => {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const { categoryId } = useParams();
   const navigate = useNavigate();
 
   const query = searchParams.get("q");
   const order = searchParams.get("order");
 
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-  const [prevPageToken, setPrevPageToken] = useState<string | null>(null);
 
   useEffect(() => {
+    setVideos([]);
+    setNextPageToken(null);
     fetchVideos();
-  }, [apiKey, query, order, isTrending]);
+  }, [apiKey, query, order, isTrending, categoryId, isHistory]);
 
   const fetchVideos = async (pageToken?: string) => {
-    if (!apiKey) return;
+    if (!apiKey && !isHistory) return;
 
     setLoading(true);
     setError(null);
 
     try {
+      if (isHistory) {
+        const history = JSON.parse(localStorage.getItem("watchHistory") || "[]");
+        setVideos(history);
+        setLoading(false);
+        return;
+      }
       let url = "";
       let baseUrl = "";
 
       if (isTrending) {
         baseUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&maxResults=24&regionCode=US&key=${apiKey}`;
+      }
+      else if (categoryId) {
+        baseUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&maxResults=24&videoCategoryId=${categoryId}&regionCode=US&key=${apiKey}`;
       }
       else if (query || order) {
         const searchQueryStr = query ? `&q=${encodeURIComponent(query)}` : '';
@@ -74,7 +85,8 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
       const data = await response.json();
 
       setNextPageToken(data.nextPageToken || null);
-      setPrevPageToken(data.prevPageToken || null);
+
+      let newVideos = [];
 
       if (query || order || (!isTrending && url.includes("/search"))) {
         const videoIds = data.items.map((item: any) => (item.id.videoId || item.id)).join(',');
@@ -82,17 +94,21 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
           const statsResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`);
           const statsData = await statsResponse.json();
 
-          const itemsWithStats = data.items.map((item: any) => {
+          newVideos = data.items.map((item: any) => {
             const videoId = item.id.videoId || item.id;
             const stats = statsData.items.find((statItem: any) => statItem.id === videoId);
             return { ...item, statistics: stats?.statistics };
           });
-          setVideos(itemsWithStats);
-        } else {
-          setVideos([]);
         }
       } else {
-        setVideos(data.items);
+        newVideos = data.items;
+      }
+
+      // Append new videos if we are fetching a pageToken, otherwise replace
+      if (pageToken) {
+        setVideos(prev => [...prev, ...newVideos]);
+      } else {
+        setVideos(newVideos);
       }
 
     } catch (err) {
@@ -103,19 +119,18 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
     }
   };
 
-  const handleNextPage = () => {
-    if (nextPageToken) {
-      fetchVideos(nextPageToken);
-      window.scrollTo(0, 0);
-    }
-  };
+  // Infinite Scroll Handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !loading && nextPageToken) {
+        fetchVideos(nextPageToken);
+      }
+    };
 
-  const handlePrevPage = () => {
-    if (prevPageToken) {
-      fetchVideos(prevPageToken);
-      window.scrollTo(0, 0);
-    }
-  };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, nextPageToken]);
+
 
   const formatViews = (views?: string) => {
     if (!views) return "0 views";
@@ -137,27 +152,6 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
     return "Today";
   };
 
-  if (loading && videos.length === 0) {
-    return (
-      <div className="p-6 md:p-8 pt-24 min-h-screen">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-y-10 gap-x-6">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-3">
-              <Skeleton className="aspect-video w-full rounded-xl" />
-              <div className="flex gap-3 px-1">
-                <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
-                <div className="flex flex-col gap-2 w-full">
-                  <Skeleton className="h-4 w-[80%]" />
-                  <Skeleton className="h-3 w-[60%]" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 md:p-8 pt-24 min-h-screen">
       {error && (
@@ -172,31 +166,8 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
         </div>
       )}
 
-      {/* Pagination Controls */}
-      {!loading && !error && (
-        <>
-          {prevPageToken && (
-            <div
-              className="fixed bottom-8 left-1/2 -translate-x-[60px] w-12 h-12 bg-zen-surface hover:bg-zinc-800 hover:scale-110 backdrop-blur rounded-full flex items-center justify-center cursor-pointer transition-all z-40 shadow-xl border border-white/5 active:scale-90"
-              onClick={handlePrevPage}
-              title="Previous Page"
-            >
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-zinc-400" fill="currentColor"><g><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></g></svg>
-            </div>
-          )}
-          {nextPageToken && (
-            <div
-              className="fixed bottom-8 left-1/2 translate-x-[16px] w-12 h-12 bg-zen-surface hover:bg-zinc-800 hover:scale-110 backdrop-blur rounded-full flex items-center justify-center cursor-pointer transition-all z-40 shadow-xl border border-white/5 active:scale-90"
-              onClick={handleNextPage}
-              title="Next Page"
-            >
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-zinc-400" fill="currentColor"><g><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></g></svg>
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-y-10 gap-x-6">
+      {/* Video Grid - Bigger Thumbnails */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-y-10 gap-x-6">
         {videos.map((video) => {
           const videoId = typeof video.id === 'string' ? video.id : video.id.videoId;
           return (
@@ -206,7 +177,7 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
               onClick={() => navigate(`/watch/${videoId}`)}
             >
               {/* Thumbnail */}
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-zinc-900 shadow-md group-hover:shadow-2xl transition-all duration-300 ring-1 ring-white/5 group-hover:ring-white/10">
+              <div className="relative aspect-video rounded-xl overflow-hidden bg-card border-2 border-border/50 group-hover:border-primary/50 shadow-lg group-hover:shadow-[0_0_20px_-5px_rgba(203,166,247,0.3)] transition-all duration-300">
                 <img
                   className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-out"
                   src={video.snippet.thumbnails.high?.url || video.snippet.thumbnails.medium.url}
@@ -237,6 +208,20 @@ const Home = ({ apiKey, isTrending = false }: { apiKey: string, isTrending?: boo
             </div>
           );
         })}
+        {loading && (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={`loading-${i}`} className="flex flex-col gap-3">
+              <Skeleton className="aspect-video w-full rounded-xl" />
+              <div className="flex gap-3 px-1">
+                <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+                <div className="flex flex-col gap-2 w-full">
+                  <Skeleton className="h-4 w-[80%]" />
+                  <Skeleton className="h-3 w-[60%]" />
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

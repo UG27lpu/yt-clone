@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
 import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import { Button } from "@/components/ui/button";
@@ -8,31 +9,13 @@ import { Input } from "@/components/ui/input";
 
 // Layout component needs to be inside BrowserRouter for useNavigate to work
 function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/?q=${encodeURIComponent(searchQuery)}`);
-      setIsSearchOpen(false);
-      setSearchQuery("");
-    }
-  };
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   if (!isSetup) {
     return (
       <div className="fixed inset-0 bg-zen-bg z-[60] flex flex-col items-center justify-center p-4">
         <div className="bg-zen-surface p-8 rounded-2xl w-full max-w-md text-center shadow-2xl border border-zinc-900 ring-1 ring-white/5">
-          <h2 className="text-2xl font-bold text-white mb-2">Welcome</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Welcome to ZenTube</h2>
           <p className="text-zinc-500 text-sm mb-6">Enter your YouTube Data API Key to continue</p>
           <Input
             className="w-full bg-black/30 border-zinc-800 text-white placeholder-zinc-600 focus-visible:ring-1 focus-visible:ring-white/20"
@@ -54,45 +37,22 @@ function AppLayout({ apiKey, setApiKey, isSetup, handleSetup }: any) {
   }
 
   return (
-    <div className="min-h-screen bg-zen-bg text-zen-text flex selection:bg-white/20">
-      <Sidebar />
+    <div className="min-h-screen bg-zen-bg text-zen-text font-sans selection:bg-white/20">
+      <Header onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-      <main className="flex-1 ml-16 w-[calc(100%-4rem)] transition-all duration-300">
-        {/* Search Trigger */}
-        <div
-          className="fixed top-6 right-6 w-12 h-12 bg-zen-surface hover:bg-zinc-800 hover:scale-105 rounded-full flex items-center justify-center cursor-pointer transition-all z-40 shadow-xl border border-white/5 group"
-          onClick={() => setIsSearchOpen(true)}
-        >
-          <svg viewBox="0 0 24 24" className="w-6 h-6 text-zinc-400 group-hover:text-white transition-colors" fill="currentColor"><path d="M20.87,20.17l-5.59-5.59C16.35,13.35,17,11.75,17,10c0-3.87-3.13-7-7-7s-7,3.13-7,7s3.13,7,7,7c1.75,0,3.35-0.65,4.58-1.71 l5.59,5.59L20.87,20.17z M10,16c-3.31,0-6-2.69-6-6s2.69-6,6-6s6,2.69,6,6S13.31,16,10,16z"></path></svg>
-        </div>
+      <div className="flex">
+        {isSidebarOpen && <Sidebar />}
 
-        {/* Search Popup - Zen Mode */}
-        {isSearchOpen && (
-          <div
-            className="fixed inset-0 bg-zen-bg/95 backdrop-blur-xl z-[100] flex items-center justify-center animate-in fade-in duration-200"
-            onClick={() => setIsSearchOpen(false)}
-          >
-            <div className="w-full max-w-3xl px-6" onClick={(e) => e.stopPropagation()}>
-              <form onSubmit={handleSearchSubmit}>
-                <Input
-                  ref={searchInputRef}
-                  type="text"
-                  className="w-full bg-transparent border-0 border-b-2 border-zinc-800 rounded-none px-0 text-4xl md:text-5xl lg:text-6xl text-center text-white font-bold placeholder-zinc-800 focus-visible:ring-0 focus-visible:border-white transition-all pb-4 h-auto"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </form>
-            </div>
-          </div>
-        )}
-
-        <Routes>
-          <Route path="/" element={<Home apiKey={apiKey} />} />
-          <Route path="/trending" element={<Home apiKey={apiKey} isTrending={true} />} />
-          <Route path="/watch/:videoId" element={<Watch apiKey={apiKey} />} />
-        </Routes>
-      </main>
+        <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'md:ml-60' : ''}`}>
+          <Routes>
+            <Route path="/" element={<Home apiKey={apiKey} />} />
+            <Route path="/trending" element={<Home apiKey={apiKey} isTrending={true} />} />
+            <Route path="/explore/:categoryId" element={<Home apiKey={apiKey} />} />
+            <Route path="/feed/history" element={<Home apiKey={apiKey} isHistory={true} />} />
+            <Route path="/watch/:videoId" element={<Watch apiKey={apiKey} />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   );
 }
