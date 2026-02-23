@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -5,6 +6,8 @@ import Home from "./pages/Home";
 import Watch from "./pages/Watch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { SidebarProvider, useSidebar } from "./contexts/SidebarContext";
@@ -13,6 +16,17 @@ import { SidebarProvider, useSidebar } from "./contexts/SidebarContext";
 function AppLayout() {
   const { isSidebarOpen } = useSidebar();
   const { apiKey, setApiKey, isSetup, completeSetup } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      toast({
+        title: "Welcome to ZenTube 🎬",
+        description: "Enjoy distraction-free viewing.",
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!isSetup) {
     return (
@@ -74,6 +88,7 @@ function App() {
         <SidebarProvider>
           <BrowserRouter>
             <AppLayout />
+            <Toaster />
           </BrowserRouter>
         </SidebarProvider>
       </AuthProvider>

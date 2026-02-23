@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { History } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidebar } from "@/contexts/SidebarContext";
+import axios from "axios";
 
 interface Snippet {
   title: string;
@@ -80,14 +81,8 @@ const Home = ({ isTrending = false, isHistory = false }: { isTrending?: boolean,
 
       url = `${baseUrl}${pageToken ? `&pageToken=${pageToken}` : ""}`;
 
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const response = await axios.get(url);
+      const data = response.data;
 
       setNextPageToken(data.nextPageToken || null);
 
@@ -96,8 +91,8 @@ const Home = ({ isTrending = false, isHistory = false }: { isTrending?: boolean,
       if (query || order || (!isTrending && url.includes("/search"))) {
         const videoIds = data.items.map((item: any) => (item.id.videoId || item.id)).join(',');
         if (videoIds) {
-          const statsResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`);
-          const statsData = await statsResponse.json();
+          const statsResponse = await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`);
+          const statsData = statsResponse.data;
 
           newVideos = data.items.map((item: any) => {
             const videoId = item.id.videoId || item.id;
@@ -117,7 +112,11 @@ const Home = ({ isTrending = false, isHistory = false }: { isTrending?: boolean,
       }
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error?.message || err.message);
+      } else {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
       console.error("Error fetching videos:", err);
     } finally {
       setLoading(false);
