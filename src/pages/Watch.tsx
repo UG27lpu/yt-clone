@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import axios from "axios";
 
 const Watch = () => {
   const { apiKey } = useAuth();
@@ -19,8 +20,8 @@ const Watch = () => {
       if (!apiKey || !videoId) return;
       try {
         // 1. Fetch Video Details & Save History
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`);
-        const data = await response.json();
+        const response = await axios.get(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${apiKey}`);
+        const data = response.data;
 
         if (data.items?.[0]) {
           const video = data.items[0];
@@ -30,8 +31,8 @@ const Watch = () => {
         }
 
         // 2. Fetch Related Videos
-        const relatedResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&relatedToVideoId=${videoId}&type=video&maxResults=15&key=${apiKey}`);
-        const relatedData = await relatedResponse.json();
+        const relatedResponse = await axios.get(`https://www.googleapis.com/youtube/v3/search?part=snippet&relatedToVideoId=${videoId}&type=video&maxResults=15&key=${apiKey}`);
+        const relatedData = relatedResponse.data;
         setRelatedVideos(relatedData.items || []);
 
       } catch (error) {
